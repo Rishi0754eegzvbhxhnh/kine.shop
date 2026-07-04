@@ -25,7 +25,7 @@ jobs:
             mkdir -p ~/shopy-stream-app
             cd ~/shopy-stream-app
             
-            # Clone or Pull latest code from GitHub
+            # Pull latest code or clone if it's the first time
             if [ -d ".git" ]; then
               git pull origin main
             else
