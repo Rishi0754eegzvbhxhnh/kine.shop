@@ -25,9 +25,12 @@ jobs:
             mkdir -p ~/shopy-stream-app
             cd ~/shopy-stream-app
             
-            # Pull latest code from GitHub
-            # Assuming you have cloned it once using: git clone https://github.com/USERNAME/REPO.git .
-            git pull origin main || echo "Git pull failed. Ensure the repo is cloned."
+            # Clone or Pull latest code from GitHub
+            if [ -d ".git" ]; then
+              git pull origin main
+            else
+              git clone https://github.com/Rishi0754eegzvbhxhnh/kine.shop.git .
+            fi
             
             # Restart all Docker containers with the new code
             sudo docker-compose down
