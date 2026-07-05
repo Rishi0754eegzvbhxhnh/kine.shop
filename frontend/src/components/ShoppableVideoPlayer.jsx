@@ -158,13 +158,9 @@ const ShoppableVideoPlayer = ({ videoFile, metadata, onBoxClick }) => {
           }}
         >
         {currentBoxes.map((boxData, index) => {
-          if (!boxData.box) return null;
+          if (!boxData.mask) return null;
           
-          // Map to 0-100 coordinate space for the viewBox
-          const x = (boxData.box.x1 / renderRect.nativeW) * 100;
-          const y = (boxData.box.y1 / renderRect.nativeH) * 100;
-          const width = ((boxData.box.x2 - boxData.box.x1) / renderRect.nativeW) * 100;
-          const height = ((boxData.box.y2 - boxData.box.y1) / renderRect.nativeH) * 100;
+          const points = boxData.mask.map(pt => `${pt[0]},${pt[1]}`).join(' ');
 
           return (
             <g key={index} className="group/box pointer-events-auto cursor-pointer" onClick={(e) => {
@@ -172,16 +168,12 @@ const ShoppableVideoPlayer = ({ videoFile, metadata, onBoxClick }) => {
               if (navigator.vibrate) navigator.vibrate(50);
               if (onBoxClick) onBoxClick(boxData, videoRef.current);
             }}>
-              <rect
-                x={x}
-                y={y}
-                width={width}
-                height={height}
+              <polygon
+                points={points}
                 className="fill-cyan-500/10 stroke-cyan-400 hover:fill-cyan-500/30 transition-all duration-300"
                 style={{ strokeWidth: 0.3, vectorEffect: 'non-scaling-stroke', strokeDasharray: '2,2' }}
               />
-              {/* Fallback tooltip anchor */}
-              <text x={x} y={y > 2 ? y - 1 : y + height + 2} fontSize="2" className="opacity-0 group-hover/box:opacity-100 fill-white font-bold drop-shadow-md transition-opacity duration-300">
+              <text x={boxData.mask[0][0]} y={boxData.mask[0][1] > 2 ? boxData.mask[0][1] - 1 : boxData.mask[0][1] + 2} fontSize="2" className="opacity-0 group-hover/box:opacity-100 fill-white font-bold drop-shadow-md transition-opacity duration-300">
                 {boxData.label || boxData.product}
               </text>
             </g>
