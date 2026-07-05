@@ -2,7 +2,7 @@ const fs = require('fs');
 const { MongoClient } = require('mongodb');
 
 async function seed() {
-    const url = 'mongodb://localhost:27017';
+    const url = process.env.MONGO_URL || 'mongodb://shoppable_mongo:27017';
     const client = new MongoClient(url);
 
     try {
