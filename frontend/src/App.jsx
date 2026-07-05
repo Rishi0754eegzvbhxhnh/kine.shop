@@ -170,7 +170,7 @@ function App() {
                 <div className="flex items-center gap-4">
                   <button 
                     onClick={() => {
-                      setSelectedVideo('/Charade_1963.mp4')
+                      setSelectedVideo('/Charade_1963_short.mp4')
                       setMetadata(null)
                       setSelectedProduct(null)
                     }}
