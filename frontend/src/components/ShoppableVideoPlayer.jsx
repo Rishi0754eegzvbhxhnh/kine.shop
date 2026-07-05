@@ -86,7 +86,7 @@ const ShoppableVideoPlayer = ({ videoFile, metadata, onBoxClick }) => {
     
     setIsSearching(true);
     try {
-      const res = await fetch(`http://localhost:8082/api/video-metadata/search?query=${encodeURIComponent(searchQuery)}`);
+      const res = await fetch(`http://${window.location.hostname}:8082/api/video-metadata/search?query=${encodeURIComponent(searchQuery)}`);
       const data = await res.json();
       
       if (data.data && data.data.length > 0) {

@@ -54,7 +54,7 @@ function App() {
       if (typeof selectedVideo === 'string') {
         // Dummy data was selected, fetch existing metadata by filename
         const filename = selectedVideo.split('/').pop();
-        const response = await axios.get(`http://localhost:8082/api/video-metadata/by-filename?name=${filename}`);
+        const response = await axios.get(`http://${window.location.hostname}:8082/api/video-metadata/by-filename?name=${filename}`);
         if (response.data && response.data.timeline) {
           setMetadata(response.data)
         } else {
@@ -64,7 +64,7 @@ function App() {
         // User uploaded a local File object
         const formData = new FormData()
         formData.append('file', selectedVideo)
-        const response = await axios.post('http://localhost:8082/api/video-metadata/upload', formData, {
+        const response = await axios.post(`http://${window.location.hostname}:8082/api/video-metadata/upload`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         })
         if (response.data && response.data.timeline) {
@@ -85,7 +85,7 @@ function App() {
 
     setIsLoadingProduct(true)
     try {
-      const response = await axios.get(`http://localhost:8082/api/products/search?query=${boxData.product}`)
+      const response = await axios.get(`http://${window.location.hostname}:8082/api/products/search?query=${boxData.product}`)
       setSelectedProduct({
         ...response.data,
         label: boxData.product,
