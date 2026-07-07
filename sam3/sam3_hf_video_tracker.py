@@ -12,16 +12,28 @@ logging.basicConfig(level=logging.INFO)
 
 SELECTED_CLASSES = [
     "coat", "shoe", "t-shirt", "pants", "dress", "chair", "table", "tv", 
-    "person", "bag", "sunglasses", "hat", "furniture", "food"
+    "person", "bag", "sunglasses", "hat", "furniture", "food", "car", "dog", "cat", 
+    "laptop", "cell phone", "bottle", "cup", "watch", "necklace", "ring", "sofa", 
+    "bed", "book", "clock", "vase", "jacket", "jeans", "shorts", "skirt", "sneakers",
+    "boots", "belt", "backpack", "suitcase", "umbrella", "tie"
 ]
 
 CATEGORY_MAP = {
     "chair": "Furniture", "tie": "Fashion", "umbrella": "Accessories",
     "cup": "Kitchen", "bottle": "Kitchen", "tv": "Electronics",
-    "person": "Fashion", "bag": "Fashion", "coat": "Fashion"
+    "person": "Fashion", "bag": "Fashion", "coat": "Fashion",
+    "shoe": "Fashion", "t-shirt": "Fashion", "pants": "Fashion", "dress": "Fashion",
+    "table": "Furniture", "sunglasses": "Accessories", "hat": "Fashion",
+    "furniture": "Furniture", "food": "Food", "car": "Vehicles", "dog": "Pets",
+    "cat": "Pets", "laptop": "Electronics", "cell phone": "Electronics",
+    "watch": "Accessories", "necklace": "Accessories", "ring": "Accessories",
+    "sofa": "Furniture", "bed": "Furniture", "book": "Books", "clock": "Home",
+    "vase": "Home", "jacket": "Fashion", "jeans": "Fashion", "shorts": "Fashion",
+    "skirt": "Fashion", "sneakers": "Fashion", "boots": "Fashion", "belt": "Accessories",
+    "backpack": "Fashion", "suitcase": "Travel"
 }
 
-def extract_frames(video_path, output_dir="frames_sam3_hf", max_frames=5):
+def extract_frames(video_path, output_dir="frames_sam3_hf", max_frames=None):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     cap = cv2.VideoCapture(video_path)
@@ -32,7 +44,9 @@ def extract_frames(video_path, output_dir="frames_sam3_hf", max_frames=5):
     
     frame_count = 0
     extracted = []
-    while success and count < max_frames: 
+    while success: 
+        if max_frames is not None and count >= max_frames:
+            break
         success, image = cap.read()
         if success and frame_count % frame_interval == 0:
             out_path = os.path.join(output_dir, f"frame_{count:04d}.jpg")
@@ -46,7 +60,7 @@ def extract_frames(video_path, output_dir="frames_sam3_hf", max_frames=5):
 
 def main():
     video_path = "Charade_1963_short.mp4"
-    frames = extract_frames(video_path, max_frames=5)
+    frames = extract_frames(video_path, max_frames=None)
     
     # We will use ultralytics YOLO-World because the transformers one might be hard to setup quickly
     from ultralytics import YOLOWorld

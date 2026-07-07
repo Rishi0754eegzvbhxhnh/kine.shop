@@ -146,9 +146,9 @@ def generate_masks():
         timeline_data[str(second)] = frame_data
         second += 1
         
-        # Limit to 10 seconds for demo to save time
-        if second >= 10:
-            break
+        # Uncomment the lines below if you want to limit the processing time for testing
+        # if second >= 10:
+        #     break
             
     with open("sam3_charade_timeline.json", "w") as f:
         json.dump(timeline_data, f, indent=2)

@@ -52,3 +52,5 @@ docker-compose (1).yml
 
 ### Local FFmpeg ###
 ffmpeg-8.1.1-essentials_build/
+node_modules/
+sam3/frames_sam3_hf/
