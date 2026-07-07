@@ -16,36 +16,34 @@ logger = logging.getLogger(__name__)
 
 # ─── Logic from detections.py ──────────────────────────────────────────────────
 
-# Open vocabulary classes for YOLO-World
+# Open vocabulary classes for YOLO-World (All 80 COCO classes)
 SELECTED_CLASSES = [
-    "coat", "shoe", "t-shirt", "pants", "dress", "chair", "table", "tv", 
-    "person", "bag", "sunglasses", "hat", "furniture", "food"
+    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat",
+    "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
+    "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack",
+    "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball",
+    "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket",
+    "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
+    "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair",
+    "couch", "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote",
+    "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book",
+    "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"
 ]
 
-# Category mapping (from detections.py)
+# Category mapping
 CATEGORY_MAP = {
-    "chair":      "Furniture",
-    "tie":        "Fashion",
-    "umbrella":   "Accessories",
-    "cup":        "Kitchen",
-    "bottle":     "Kitchen",
-    "tv":         "Electronics",
-    "book":       "Books",
-    "laptop":     "Electronics",
-    "cell phone": "Electronics",
-    "handbag":    "Fashion",
-    "vase":       "Home Decor",
-    "suitcase":   "Travel",
-    "remote":     "Electronics",
-    "wine glass": "Kitchen",
-    "bowl":       "Kitchen",
-    "teddy bear": "Toys",
-    "skateboard": "Sports",
-    "skis":       "Sports",
-    "surfboard":  "Sports",
+    "chair":      "Furniture", "couch": "Furniture", "bed": "Furniture", "dining table": "Furniture",
+    "tie":        "Fashion", "backpack": "Fashion", "handbag": "Fashion", "suitcase": "Travel",
+    "umbrella":   "Accessories", "bottle": "Kitchen", "cup": "Kitchen", "wine glass": "Kitchen",
+    "bowl":       "Kitchen", "fork": "Kitchen", "knife": "Kitchen", "spoon": "Kitchen",
+    "tv":         "Electronics", "laptop": "Electronics", "cell phone": "Electronics",
+    "remote":     "Electronics", "mouse": "Electronics", "keyboard": "Electronics",
+    "microwave":  "Appliances", "oven": "Appliances", "refrigerator": "Appliances",
+    "book":       "Books", "vase": "Home Decor", "clock": "Home Decor", "teddy bear": "Toys",
+    "skateboard": "Sports", "skis": "Sports", "surfboard": "Sports", "person": "Fashion"
 }
 
-# Product name mapping (from detections.py)
+# Product name mapping
 PRODUCT_MAP = {
     "chair":      "Ergonomic Office Chair",
     "tie":        "Premium Silk Tie",
@@ -68,28 +66,16 @@ PRODUCT_MAP = {
     "surfboard":  "Beginner Surfboard",
 }
 
-# Price mapping (from detections.py)
+# Price mapping
 PRICE_MAP = {
-    "chair":      149,
-    "tie":         29,
-    "umbrella":    24,
-    "cup":         12,
-    "bottle":      35,
-    "tv":         699,
-    "wine glass":  45,
-    "book":        15,
-    "bowl":        20,
-    "laptop":     999,
-    "cell phone": 799,
-    "remote":      25,
-    "suitcase":    89,
-    "handbag":     79,
-    "vase":        30,
-    "skateboard": 120,
-    "teddy bear":  18,
-    "skis":       450,
-    "surfboard":  350,
+    "chair":      149, "tie":         29, "umbrella":    24, "cup":         12,
+    "bottle":      35, "tv":         699, "wine glass":  45, "book":        15,
+    "bowl":        20, "laptop":     999, "cell phone": 799, "remote":      25,
+    "suitcase":    89, "handbag":     79, "vase":        30, "skateboard": 120,
+    "teddy bear":  18, "skis":       450, "surfboard":  350,
 }
+
+import random
 
 logger.info("Loading YOLO-World model...")
 from ultralytics import YOLOWorld
@@ -106,7 +92,7 @@ def enrich_detection(label: str, conf: float, box: dict) -> dict:
         "box":          box,
         "category":     CATEGORY_MAP.get(label, "General"),
         "product_name": PRODUCT_MAP.get(label, label.title()),
-        "price":        PRICE_MAP.get(label, 0),
+        "price":        PRICE_MAP.get(label, random.randint(20, 200)),
         "shop_url":     f"https://www.amazon.com/s?k={label.replace(' ', '+')}"
     }
 
@@ -144,8 +130,7 @@ async def detect_objects(file: UploadFile = File(...)):
 @app.post("/api/analyze-video")
 async def analyze_video(file: UploadFile = File(...)):
     """
-    Process video frame by frame (yolov8.py logic), filter via SELECTED_CLASSES
-    (detections.py logic), and return a per-second timeline with product data.
+    Process video frame by frame and return a per-frame timeline with product data.
     """
     try:
         fd, temp_path = tempfile.mkstemp(suffix=".mp4")
@@ -155,11 +140,10 @@ async def analyze_video(file: UploadFile = File(...)):
         logger.info(f"Processing video: {temp_path}")
         cap = cv2.VideoCapture(temp_path)
         fps = cap.get(cv2.CAP_PROP_FPS)
-        frame_interval = max(1, int(fps))  # sample 1 frame per second
+        frame_interval = 1  # Frame-by-frame processing!
 
         timeline = {}
         frame_count = 0
-        second_count = 0
 
         while cap.isOpened():
             ret, frame = cap.read()
@@ -176,7 +160,6 @@ async def analyze_video(file: UploadFile = File(...)):
                     x1, y1, x2, y2, conf, cls_id = row
                     label = SELECTED_CLASSES[int(cls_id)]
 
-                    # ── detections.py filter ──
                     if label not in SELECTED_CLASSES:
                         continue
 
@@ -186,14 +169,13 @@ async def analyze_video(file: UploadFile = File(...)):
                         {"x1": float(x1), "y1": float(y1), "x2": float(x2), "y2": float(y2)}
                     ))
 
-                timeline[str(second_count)] = detections
-                second_count += 1
+                timeline[str(frame_count)] = detections
 
             frame_count += 1
 
         cap.release()
         os.remove(temp_path)
-        logger.info(f"Done. {second_count} seconds analyzed.")
+        logger.info(f"Done. {frame_count} frames analyzed.")
 
         return JSONResponse(content={"status": "success", "timeline": timeline})
 

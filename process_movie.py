@@ -10,33 +10,32 @@ client = MongoClient(mongo_uri)
 db = client["shoppablestream"]
 collection = db["videoMetadata"]
 
-# Classes and mapping from ml-service
+# Classes and mapping from ml-service (All 80 COCO classes)
 SELECTED_CLASSES = [
-    "coat", "shoe", "t-shirt", "pants", "dress", "chair", "table", "tv","clothes",
-    "bag", "sunglasses", "hat", "furniture", "food", "laptop", "cell phone", 
-    "bottle", "cup", "car", "bicycle", "sofa", "bed", "dining table", 
-    "microwave", "oven", "refrigerator", "book", "clock", "vase", "teddy bear", 
-    "backpack", "umbrella", "handbag", "tie", "suitcase", "wine glass", 
-    "bowl", "potted plant", "motorcycle", "airplane", "bus", "train", "truck", 
-    "boat", "bench", "jewelry", "watch", "necklace", "earrings", "ring", "jacket", "sweater"
+    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat",
+    "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
+    "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack",
+    "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball",
+    "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket",
+    "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
+    "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair",
+    "couch", "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote",
+    "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book",
+    "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"
 ]
 
 CATEGORY_MAP = {
-    "chair": "Furniture", "table": "Furniture", "sofa": "Furniture", "bed": "Furniture",
-    "furniture": "Furniture", "dining table": "Furniture",
-    "coat": "Fashion", "shoe": "Fashion", "t-shirt": "Fashion", "pants": "Fashion", 
-    "dress": "Fashion", "bag": "Fashion", "sunglasses": "Fashion", "hat": "Fashion",
-    "handbag": "Fashion", "tie": "Fashion", "jewelry": "Accessories", "watch": "Accessories",
-    "necklace": "Accessories", "earrings": "Accessories", "ring": "Accessories",
-    "jacket": "Fashion", "sweater": "Fashion",
-    "laptop": "Electronics", "cell phone": "Electronics", "tv": "Electronics",
-    "microwave": "Appliances", "oven": "Appliances", "refrigerator": "Appliances",
-    "cup": "Kitchen", "bottle": "Kitchen", "wine glass": "Kitchen", "bowl": "Kitchen",
-    "book": "Books", "vase": "Home Decor", "clock": "Home Decor", "potted plant": "Home Decor",
-    "teddy bear": "Toys", "umbrella": "Accessories", "suitcase": "Travel", "backpack": "Travel",
+    "chair":      "Furniture", "couch": "Furniture", "bed": "Furniture", "dining table": "Furniture",
+    "tie":        "Fashion", "backpack": "Fashion", "handbag": "Fashion", "suitcase": "Travel",
+    "umbrella":   "Accessories", "bottle": "Kitchen", "cup": "Kitchen", "wine glass": "Kitchen",
+    "bowl":       "Kitchen", "fork": "Kitchen", "knife": "Kitchen", "spoon": "Kitchen",
+    "tv":         "Electronics", "laptop": "Electronics", "cell phone": "Electronics",
+    "remote":     "Electronics", "mouse": "Electronics", "keyboard": "Electronics",
+    "microwave":  "Appliances", "oven": "Appliances", "refrigerator": "Appliances",
+    "book":       "Books", "vase": "Home Decor", "clock": "Home Decor", "teddy bear": "Toys",
+    "skateboard": "Sports", "skis": "Sports", "surfboard": "Sports", "person": "Fashion",
     "car": "Vehicles", "bicycle": "Vehicles", "motorcycle": "Vehicles", "airplane": "Vehicles",
-    "bus": "Vehicles", "train": "Vehicles", "truck": "Vehicles", "boat": "Vehicles",
-    "food": "Food"
+    "bus": "Vehicles", "train": "Vehicles", "truck": "Vehicles", "boat": "Vehicles"
 }
 
 def enrich_detection(label, conf, box):
@@ -61,13 +60,12 @@ cap = cv2.VideoCapture(filepath)
 fps = cap.get(cv2.CAP_PROP_FPS)
 if fps == 0:
     fps = 24
-frame_interval = int(fps)
+frame_interval = 1  # Process every frame
 
 timeline = {}
 frame_count = 0
-second_count = 0
 
-print(f"Processing entire video at 1 FPS...")
+print(f"Processing entire video frame-by-frame (1 FPS is disabled)...")
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -87,15 +85,14 @@ while cap.isOpened():
                 label, float(conf), {"x1": float(x1), "y1": float(y1), "x2": float(x2), "y2": float(y2)}
             ))
         
-        timeline[str(second_count)] = detections
-        if second_count % 10 == 0:
-            print(f"Processed {second_count} seconds...")
-        second_count += 1
+        timeline[str(frame_count)] = detections
+        if frame_count % 100 == 0:
+            print(f"Processed {frame_count} frames...")
 
     frame_count += 1
 
 cap.release()
-print(f"Finished processing {second_count} seconds. Saving to MongoDB...")
+print(f"Finished processing {frame_count} frames. Saving to MongoDB...")
 
 # Upsert into MongoDB
 collection.update_one(

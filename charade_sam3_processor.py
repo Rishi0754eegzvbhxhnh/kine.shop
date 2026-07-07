@@ -13,20 +13,30 @@ from sam3 import build_sam3_image_model
 from sam3.model.sam3_image_processor import Sam3Processor
 from sam3.visualization_utils import normalize_bbox
 
-# Classes and mapping
+# Classes and mapping (All 80 COCO classes)
 SELECTED_CLASSES = [
-    "coat", "shoe", "t-shirt", "pants", "dress", "chair", "table", "tv", 
-    "person", "bag", "sunglasses", "hat", "furniture", "food"
+    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat",
+    "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
+    "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack",
+    "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball",
+    "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket",
+    "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
+    "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair",
+    "couch", "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote",
+    "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book",
+    "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"
 ]
 
 CATEGORY_MAP = {
-    "chair": "Furniture", "tie": "Fashion", "umbrella": "Accessories",
-    "cup": "Kitchen", "bottle": "Kitchen", "tv": "Electronics",
-    "book": "Books", "laptop": "Electronics", "cell phone": "Electronics",
-    "handbag": "Fashion", "vase": "Home Decor", "suitcase": "Travel",
-    "remote": "Electronics", "wine glass": "Kitchen", "bowl": "Kitchen",
-    "teddy bear": "Toys", "skateboard": "Sports", "skis": "Sports",
-    "surfboard": "Sports",
+    "chair":      "Furniture", "couch": "Furniture", "bed": "Furniture", "dining table": "Furniture",
+    "tie":        "Fashion", "backpack": "Fashion", "handbag": "Fashion", "suitcase": "Travel",
+    "umbrella":   "Accessories", "bottle": "Kitchen", "cup": "Kitchen", "wine glass": "Kitchen",
+    "bowl":       "Kitchen", "fork": "Kitchen", "knife": "Kitchen", "spoon": "Kitchen",
+    "tv":         "Electronics", "laptop": "Electronics", "cell phone": "Electronics",
+    "remote":     "Electronics", "mouse": "Electronics", "keyboard": "Electronics",
+    "microwave":  "Appliances", "oven": "Appliances", "refrigerator": "Appliances",
+    "book":       "Books", "vase": "Home Decor", "clock": "Home Decor", "teddy bear": "Toys",
+    "skateboard": "Sports", "skis": "Sports", "surfboard": "Sports", "person": "Fashion"
 }
 
 def generate_masks():
@@ -56,15 +66,13 @@ def generate_masks():
         
     frames = sorted([f for f in os.listdir(frames_dir) if f.endswith('.jpg')])
     
-    # We will process 1 frame every 24 frames to simulate 1 FPS
-    # Assuming 24fps video
-    frame_interval = 24
+    # We will process every single frame (Frame-by-frame)
+    frame_interval = 1
     
-    second = 0
     for i in range(0, len(frames), frame_interval):
         frame_file = frames[i]
         frame_path = os.path.join(frames_dir, frame_file)
-        print(f"Processing second {second}: {frame_file}")
+        print(f"Processing frame {i}: {frame_file}")
         
         # Load image for YOLO and SAM3
         image_np = cv2.imread(frame_path)
@@ -122,8 +130,8 @@ def generate_masks():
                         if contours:
                             largest_contour = max(contours, key=cv2.contourArea)
                             
-                            # Simplify contour
-                            epsilon = 0.01 * cv2.arcLength(largest_contour, True)
+                            # Simplify contour more aggressively to save JSON size
+                            epsilon = 0.05 * cv2.arcLength(largest_contour, True)
                             approx = cv2.approxPolyDP(largest_contour, epsilon, True)
                             
                             for pt in approx:
@@ -143,11 +151,10 @@ def generate_masks():
                     "mask": mask_points_percent
                 })
                 
-        timeline_data[str(second)] = frame_data
-        second += 1
+        timeline_data[str(i)] = frame_data
         
         # Uncomment the lines below if you want to limit the processing time for testing
-        # if second >= 10:
+        # if i >= 240: # e.g. 10 seconds of 24fps
         #     break
             
     with open("sam3_charade_timeline.json", "w") as f:
