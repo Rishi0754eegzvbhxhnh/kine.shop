@@ -1,5 +1,6 @@
 import os
 import cv2
+import json
 import torch
 import pandas as pd
 from pymongo import MongoClient
@@ -48,9 +49,11 @@ def enrich_detection(label, conf, box):
     }
 
 print("Loading YOLO-World model...")
-from ultralytics import YOLOWorld
-model = YOLOWorld('yolov8s-world.pt')
-model.set_classes(SELECTED_CLASSES)
+from ultralytics import YOLO
+
+# Load model
+model = YOLO("yolov8n.pt")
+# model.set_classes(SELECTED_CLASSES) # Not needed for YOLOv8n (default COCO)
 
 filename = "Charade_1963.mp4"
 filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
@@ -89,11 +92,21 @@ while cap.isOpened():
         timeline[str(second_count)] = detections
         if second_count % 10 == 0:
             print(f"Processed {second_count} seconds...")
+            
+        # Break it into 5-minute checkpoints as requested
+        if second_count % 300 == 0 and second_count > 0:
+            json_path = os.path.join("frontend", "public", "sam3_charade_timeline.json")
+            with open(json_path, "w") as f:
+                json.dump(timeline, f, indent=2)
+            print(f"Checkpoint saved at {second_count} seconds ({(second_count/60):.1f} minutes)")
+            
         second_count += 1
+        
+        if second_count > 1800:
+            print("Reached 30 minutes limit. Stopping extraction.")
+            break
 
     frame_count += 1
-
-import json
 
 cap.release()
 print(f"Finished processing {second_count} seconds. Saving to MongoDB and JSON...")
