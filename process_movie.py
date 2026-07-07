@@ -60,12 +60,13 @@ cap = cv2.VideoCapture(filepath)
 fps = cap.get(cv2.CAP_PROP_FPS)
 if fps == 0:
     fps = 24
-frame_interval = 1  # Process every frame
+frame_interval = int(fps)
 
 timeline = {}
 frame_count = 0
+second_count = 0
 
-print(f"Processing entire video frame-by-frame (1 FPS is disabled)...")
+print(f"Processing entire video at 1 FPS...")
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -85,24 +86,33 @@ while cap.isOpened():
                 label, float(conf), {"x1": float(x1), "y1": float(y1), "x2": float(x2), "y2": float(y2)}
             ))
         
-        timeline[str(frame_count)] = detections
-        if frame_count % 100 == 0:
-            print(f"Processed {frame_count} frames...")
+        timeline[str(second_count)] = detections
+        if second_count % 10 == 0:
+            print(f"Processed {second_count} seconds...")
+        second_count += 1
 
     frame_count += 1
 
+import json
+
 cap.release()
-print(f"Finished processing {frame_count} frames. Saving to MongoDB...")
+print(f"Finished processing {second_count} seconds. Saving to MongoDB and JSON...")
+
+# Write directly to the static timeline JSON
+json_path = os.path.join("frontend", "public", "sam3_charade_timeline.json")
+with open(json_path, "w") as f:
+    json.dump(timeline, f, indent=2)
+print(f"Saved complete timeline to {json_path}")
 
 # Upsert into MongoDB
-collection.update_one(
-    {"filename": filename},
-    {"$set": {
-        "status": "completed",
-        "timeline": timeline,
-        "_class": "com.shoppablestream.backend.models.VideoMetadata"
-    }},
-    upsert=True
-)
+# collection.update_one(
+#     {"filename": filename},
+#     {"$set": {
+#         "status": "completed",
+#         "timeline": timeline,
+#         "_class": "com.shoppablestream.backend.models.VideoMetadata"
+#     }},
+#     upsert=True
+# )
 
 print("Done!")

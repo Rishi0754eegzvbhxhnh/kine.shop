@@ -108,9 +108,8 @@ const ShoppableVideoPlayer = ({ videoFile, metadata, onBoxClick }) => {
 
   const currentBoxes = React.useMemo(() => {
     if (!metadata || !metadata.timeline) return [];
-    // Convert current time to frame index (assuming 24 FPS)
-    const frame = Math.floor(currentTime * 24);
-    return metadata.timeline[String(frame)] || [];
+    const sec = Math.floor(currentTime);
+    return metadata.timeline[String(sec)] || [];
   }, [metadata, currentTime]);
 
   const [showAnalysis, setShowAnalysis] = useState(false);

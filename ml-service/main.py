@@ -140,10 +140,11 @@ async def analyze_video(file: UploadFile = File(...)):
         logger.info(f"Processing video: {temp_path}")
         cap = cv2.VideoCapture(temp_path)
         fps = cap.get(cv2.CAP_PROP_FPS)
-        frame_interval = 1  # Frame-by-frame processing!
+        frame_interval = max(1, int(fps))  # sample 1 frame per second
 
         timeline = {}
         frame_count = 0
+        second_count = 0
 
         while cap.isOpened():
             ret, frame = cap.read()
@@ -169,7 +170,8 @@ async def analyze_video(file: UploadFile = File(...)):
                         {"x1": float(x1), "y1": float(y1), "x2": float(x2), "y2": float(y2)}
                     ))
 
-                timeline[str(frame_count)] = detections
+                timeline[str(second_count)] = detections
+                second_count += 1
 
             frame_count += 1
 

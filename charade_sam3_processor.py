@@ -66,13 +66,15 @@ def generate_masks():
         
     frames = sorted([f for f in os.listdir(frames_dir) if f.endswith('.jpg')])
     
-    # We will process every single frame (Frame-by-frame)
-    frame_interval = 1
+    # We will process 1 frame every 24 frames to simulate 1 FPS
+    # Assuming 24fps video
+    frame_interval = 24
     
+    second = 0
     for i in range(0, len(frames), frame_interval):
         frame_file = frames[i]
         frame_path = os.path.join(frames_dir, frame_file)
-        print(f"Processing frame {i}: {frame_file}")
+        print(f"Processing second {second}: {frame_file}")
         
         # Load image for YOLO and SAM3
         image_np = cv2.imread(frame_path)
@@ -151,10 +153,11 @@ def generate_masks():
                     "mask": mask_points_percent
                 })
                 
-        timeline_data[str(i)] = frame_data
+        timeline_data[str(second)] = frame_data
+        second += 1
         
         # Uncomment the lines below if you want to limit the processing time for testing
-        # if i >= 240: # e.g. 10 seconds of 24fps
+        # if second >= 10:
         #     break
             
     with open("sam3_charade_timeline.json", "w") as f:
