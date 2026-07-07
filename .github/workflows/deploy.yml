@@ -36,5 +36,11 @@ jobs:
             sudo docker-compose down
             sudo docker-compose up -d --build
             
+            # Wait for MongoDB to initialize
+            sleep 15
+            
+            # Seed the database using a temporary Node container
+            sudo docker run --rm -v $(pwd):/app -w /app --network host node:18 bash -c "npm install mongodb && MONGO_URL='mongodb://localhost:27017' node seed.js"
+            
             # Clean up dangling images to save disk space
             sudo docker image prune -f
