@@ -57,6 +57,9 @@ services:
     container_name: shoppable_frontend
     ports:
       - "80:80"
+    volumes:
+      - ./frontend/public/Charade_1963.mp4:/usr/share/nginx/html/Charade_1963.mp4
+      - ./frontend/public/Charade_1963_short.mp4:/usr/share/nginx/html/Charade_1963_short.mp4
     depends_on:
       - backend
     restart: unless-stopped
