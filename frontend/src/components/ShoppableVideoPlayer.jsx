@@ -143,10 +143,10 @@ const ShoppableVideoPlayer = ({ videoFile, metadata, onBoxClick }) => {
         onLoadedMetadata={handleLoadedMetadata}
       />
 
-      {/* SVG Overlay for Pixel-Perfect SAM Masks */}
+      {/* SVG Overlay for YOLO Bounding Boxes and SAM Masks */}
       {renderRect && (
         <svg 
-          viewBox="0 0 100 100" 
+          viewBox={`0 0 ${renderRect.nativeW} ${renderRect.nativeH}`}
           preserveAspectRatio="none" 
           className="absolute pointer-events-none" 
           style={{ 
@@ -158,26 +158,75 @@ const ShoppableVideoPlayer = ({ videoFile, metadata, onBoxClick }) => {
           }}
         >
         {currentBoxes.map((boxData, index) => {
-          if (!boxData.mask) return null;
+          // YOLO bounding box format: { x1, y1, x2, y2 } in pixel coordinates
+          if (boxData.box) {
+            const { x1, y1, x2, y2 } = boxData.box;
+            const w = x2 - x1;
+            const h = y2 - y1;
+            return (
+              <g key={index} className="group/box pointer-events-auto cursor-pointer" onClick={(e) => {
+                e.stopPropagation();
+                if (navigator.vibrate) navigator.vibrate(50);
+                if (onBoxClick) onBoxClick(boxData, videoRef.current);
+              }}>
+                <rect
+                  x={x1} y={y1} width={w} height={h}
+                  className="fill-cyan-500/10 stroke-cyan-400 hover:fill-cyan-500/30 transition-all duration-300"
+                  style={{ strokeWidth: 2, vectorEffect: 'non-scaling-stroke' }}
+                  rx="4" ry="4"
+                />
+                {/* Label background */}
+                <rect
+                  x={x1} y={y1 > 24 ? y1 - 24 : y1 + h + 2}
+                  width={Math.max(w, (boxData.label || boxData.product || '').length * 9 + 16)}
+                  height="22"
+                  rx="4" ry="4"
+                  fill="rgba(0,200,255,0.85)"
+                  className="opacity-0 group-hover/box:opacity-100 transition-opacity duration-200"
+                />
+                {/* Label text */}
+                <text 
+                  x={x1 + 6} 
+                  y={y1 > 24 ? y1 - 8 : y1 + h + 16}
+                  fontSize="13" 
+                  fontWeight="bold"
+                  className="opacity-0 group-hover/box:opacity-100 fill-black transition-opacity duration-200"
+                  style={{ fontFamily: 'system-ui, sans-serif' }}
+                >
+                  {boxData.label || boxData.product} {((boxData.confidence || 0) * 100).toFixed(0)}%
+                </text>
+                {/* Always-visible small dot indicator */}
+                <circle
+                  cx={x1 + 6} cy={y1 + 6} r="4"
+                  fill="#00d4ff"
+                  className="animate-pulse"
+                />
+              </g>
+            );
+          }
           
-          const points = boxData.mask.map(pt => `${pt[0]},${pt[1]}`).join(' ');
-
-          return (
-            <g key={index} className="group/box pointer-events-auto cursor-pointer" onClick={(e) => {
-              e.stopPropagation();
-              if (navigator.vibrate) navigator.vibrate(50);
-              if (onBoxClick) onBoxClick(boxData, videoRef.current);
-            }}>
-              <polygon
-                points={points}
-                className="fill-cyan-500/10 stroke-cyan-400 hover:fill-cyan-500/30 transition-all duration-300"
-                style={{ strokeWidth: 0.3, vectorEffect: 'non-scaling-stroke', strokeDasharray: '2,2' }}
-              />
-              <text x={boxData.mask[0][0]} y={boxData.mask[0][1] > 2 ? boxData.mask[0][1] - 1 : boxData.mask[0][1] + 2} fontSize="2" className="opacity-0 group-hover/box:opacity-100 fill-white font-bold drop-shadow-md transition-opacity duration-300">
-                {boxData.label || boxData.product}
-              </text>
-            </g>
-          );
+          // SAM polygon mask format (legacy)
+          if (boxData.mask) {
+            const points = boxData.mask.map(pt => `${pt[0]},${pt[1]}`).join(' ');
+            return (
+              <g key={index} className="group/box pointer-events-auto cursor-pointer" onClick={(e) => {
+                e.stopPropagation();
+                if (navigator.vibrate) navigator.vibrate(50);
+                if (onBoxClick) onBoxClick(boxData, videoRef.current);
+              }}>
+                <polygon
+                  points={points}
+                  className="fill-cyan-500/10 stroke-cyan-400 hover:fill-cyan-500/30 transition-all duration-300"
+                  style={{ strokeWidth: 0.3, vectorEffect: 'non-scaling-stroke', strokeDasharray: '2,2' }}
+                />
+                <text x={boxData.mask[0][0]} y={boxData.mask[0][1] > 2 ? boxData.mask[0][1] - 1 : boxData.mask[0][1] + 2} fontSize="2" className="opacity-0 group-hover/box:opacity-100 fill-white font-bold drop-shadow-md transition-opacity duration-300">
+                  {boxData.label || boxData.product}
+                </text>
+              </g>
+            );
+          }
+          
+          return null;
         })}
         </svg>
       )}
