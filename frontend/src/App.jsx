@@ -51,27 +51,12 @@ function App() {
     
     setIsProcessing(true)
     try {
-      if (typeof selectedVideo === 'string') {
-        // Dummy data was selected, fetch existing metadata by filename
-        const filename = selectedVideo.split('/').pop();
-        const response = await axios.get(`http://${window.location.hostname}:8082/api/video-metadata/by-filename?name=${filename}`);
-        if (response.data && response.data.timeline) {
-          setMetadata(response.data)
-        } else {
-          alert("Metadata not found in database. The AI analysis script might still be running!");
-        }
+      // Fetch local SAM3 inference results directly from Nginx since we disabled ML service
+      const response = await axios.get('/sam3_charade_timeline.json?t=' + new Date().getTime())
+      if (response.data) {
+        setMetadata({ timeline: response.data })
       } else {
-        // User uploaded a local File object
-        const formData = new FormData()
-        formData.append('file', selectedVideo)
-        const response = await axios.post(`http://${window.location.hostname}:8082/api/video-metadata/upload`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        })
-        if (response.data && response.data.timeline) {
-          setMetadata(response.data)
-        } else {
-          alert("Failed to analyze video properly.");
-        }
+        alert("Failed to analyze video properly.");
       }
     } catch (err) {
       console.error("Error analyzing video:", err)
